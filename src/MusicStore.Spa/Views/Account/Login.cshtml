@@ -20,15 +20,14 @@
     <div class="col-md-12">
         <section id="loginForm">
             @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post,
-                new
-            {
-                @class = "form-horizontal",
-                role = "form",
-                novalidate = "",
-                name = "login",
-                app_prevent_submit = "login.$invalid",
-                ng_submit = "login.submitAttempted=true"
-            }))
+                new {
+                    @class = "form-horizontal",
+                    role = "form",
+                    novalidate = "",
+                    name = "login",
+                    app_prevent_submit = "login.$invalid",
+                    ng_submit = "login.submitAttempted=true"
+                }))
             {
                 @Html.AntiForgeryToken()
                 <h4>Use a local account to log in.</h4>

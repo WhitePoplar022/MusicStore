@@ -12,6 +12,7 @@ module MusicStore.Store {
         MusicStore.LoginLink,
         MusicStore.GenreApi,
         MusicStore.AlbumApi,
+        MusicStore.Visited,
         MusicStore.Store.Home,
         MusicStore.Store.Catalog
     ];
