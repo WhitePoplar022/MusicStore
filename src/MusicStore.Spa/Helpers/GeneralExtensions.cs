@@ -1,11 +1,10 @@
 ﻿using System;
-using Microsoft.AspNet.Mvc.Rendering;
 
-namespace System.Web.Mvc.Html
+namespace Microsoft.AspNet.Mvc.Rendering
 {
     public static class GeneralExtensions
     {
-        public static HtmlString Tag(this HtmlHelper htmlHelper, TagBuilder tagBuilder)
+        public static HtmlString Tag(this IHtmlHelper htmlHelper, TagBuilder tagBuilder)
         {
             return htmlHelper.Raw(tagBuilder.ToString());
         }

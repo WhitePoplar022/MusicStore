@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Linq;
-using Microsoft.Framework.ConfigurationModel;
 using Microsoft.Data.Entity;
 using Microsoft.Data.Entity.Metadata;
-using Microsoft.Data.Entity.InMemory;
-using Microsoft.Data.Entity.SqlServer;
+using Microsoft.Framework.DependencyInjection;
 
 namespace MusicStore.Models
 {
     public class MusicStoreContext : DbContext
     {
-        private readonly IConfiguration _configuration;
-
-        public MusicStoreContext(IServiceProvider serviceProvider, IConfiguration configuration)
-            : base(serviceProvider)
+        public MusicStoreContext(IServiceProvider serviceProvider, IOptionsAccessor<MusicStoreDbContextOptions> optionsAccessor)
+            : base(serviceProvider, optionsAccessor.Options.BuildConfiguration())
         {
-            _configuration = configuration;
+
         }
 
         public DbSet<Album> Albums { get; set; }
@@ -24,15 +20,6 @@ namespace MusicStore.Models
         public DbSet<Genre> Genres { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
-
-        protected override void OnConfiguring(DbContextOptions builder)
-        {
-#if NET45
-            builder.UseSqlServer(_configuration.Get("Data:DefaultConnection:ConnectionString"));
-#else
-            builder.UseInMemoryStore(persist: true);
-#endif
-        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -74,5 +61,10 @@ namespace MusicStore.Models
             album.AddNavigation(new Navigation(album.ForeignKeys.Single(k => k.ReferencedEntityType == genre), "Genre"));
             album.AddNavigation(new Navigation(album.ForeignKeys.Single(k => k.ReferencedEntityType == artist), "Artist"));
         }
+    }
+
+    public class MusicStoreDbContextOptions : DbContextOptions
+    {
+
     }
 }

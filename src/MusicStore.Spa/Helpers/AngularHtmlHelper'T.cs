@@ -12,7 +12,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
             
         }
 
-        // TODO: These members are required to give helper extesions access to required protected members
+        // TODO: These members are required to give helper extensions access to required protected members
 
         public IModelMetadataProvider ModelMetadataProvider
         {

@@ -1,7 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.FileSystems;
 using Microsoft.AspNet.Http;
@@ -14,68 +11,65 @@ using Microsoft.AspNet.StaticFiles;
 using Microsoft.Data.Entity;
 using Microsoft.Framework.ConfigurationModel;
 using Microsoft.Framework.DependencyInjection;
-using Microsoft.Framework.Runtime;
 using MusicStore.Models;
 
 namespace MusicStore.Spa
 {
     public class Startup
     {
-        private readonly IApplicationEnvironment _applicationEnvironment;
-
-        public Startup(IApplicationEnvironment applicationEnvironment)
-        {
-            _applicationEnvironment = applicationEnvironment;
-        }
-
         public void Configure(IBuilder app)
         {
-            app.UseStaticFiles(new StaticFileOptions { FileSystem = new PhysicalFileSystem("wwwroot") });
+            var configuration = new Configuration()
+                .AddJsonFile("Config.json")
+                .AddEnvironmentVariables();
 
             app.UseServices(services =>
             {
-                // TODO: Don't put configuration in the container
-                services.AddInstance<IConfiguration>(new Configuration()
-                    .AddJsonFile(Path.Combine(_applicationEnvironment.ApplicationBasePath, "LocalConfig.json"))
-                    .AddEnvironmentVariables());
-                
-                services.AddMvc();
-                services.AddEntityFramework()
-                    .AddSqlServer()
-                    .AddInMemoryStore();
-                services.AddScoped<MusicStoreContext>();
-                
-                // Register the Angular HTML helpers
-                services.AddTransient(typeof(IHtmlHelper<>), typeof(AngularHtmlHelper<>));
-
-                // Add all Identity related services to IoC.
-                // Using an InMemory store to store membership data until SQL server is available. 
-                // Users created will be lost on application shutdown.
-                services.AddTransient<DbContext, ApplicationDbContext>();
-
-                services.AddIdentity<ApplicationUser, IdentityRole>(builder =>
+                // Add options accessors to the service container
+                services.SetupOptions<IdentityDbContextOptions>(options =>
                 {
-                    //s.UseDbContext(() => context);
-                    //s.UseUserStore(() => new UserStore(context));
-                    builder.AddEntity();
-                    builder.AddUserManager<ApplicationUserManager>();
-                    builder.AddRoleManager<ApplicationRoleManager>();
+                    options.DefaultAdminUserName = configuration.Get("DefaultAdminUsername");
+                    options.DefaultAdminPassword = configuration.Get("DefaultAdminPassword");
+                    options.UseSqlServer(configuration.Get("Data:IdentityConnection:ConnectionString"));
                 });
-                services.AddTransient<ApplicationSignInManager>();
+
+                services.SetupOptions<MusicStoreDbContextOptions>(options =>
+                    options.UseSqlServer(configuration.Get("Data:DefaultConnection:ConnectionString")));
+
+                // Add MVC services to the service container
+                services.AddMvc();
+
+                // Add EF services to the service container
+                services.AddEntityFramework()
+                    .AddSqlServer();
+
+                // Add Identity services to the service container
+                services.AddIdentity<ApplicationUser>()
+                    .AddEntityFramework<ApplicationUser, ApplicationDbContext>()
+                    .AddHttpSignIn();
+
+                // Add application services to the service container
+                services.AddScoped<MusicStoreContext>();
+                services.AddTransient(typeof(IHtmlHelper<>), typeof(AngularHtmlHelper<>));
             });
 
+            // Initialize the sample data
+            SampleData.InitializeMusicStoreDatabaseAsync(app.ApplicationServices).Wait();
+            SampleData.InitializeIdentityDatabaseAsync(app.ApplicationServices).Wait();
+
+            // Configure the HTTP request pipeline
+
+            // Add cookie auth
             app.UseCookieAuthentication(new CookieAuthenticationOptions
             {
                 AuthenticationType = DefaultAuthenticationTypes.ApplicationCookie,
-                LoginPath = new PathString("/Account/Login"),
-                Notifications = new CookieAuthenticationNotifications
-                {
-                    //OnValidateIdentity = SecurityStampValidator.OnValidateIdentity<ApplicationUserManager, ApplicationUser>(
-                    //        validateInterval: TimeSpan.FromMinutes(30),
-                    //        regenerateIdentity: (manager, user) => user.GenerateUserIdentityAsync(manager))
-                }
+                LoginPath = new PathString("/Account/Login")
             });
 
+            // Add static files
+            app.UseStaticFiles(new StaticFileOptions { FileSystem = new PhysicalFileSystem("wwwroot") });
+
+            // Add MVC
             app.UseMvc(routes =>
             {
                 // TODO: Move these back to attribute routes when they're available
@@ -87,37 +81,6 @@ namespace MusicStore.Spa
                 routes.MapRoute(null, "api/albums/{albumId}", new { controller = "AlbumsApi", action = "Details" });
                 routes.MapRoute(null, "{controller}/{action}", new { controller = "Home", action = "Index" });
             });
-
-            SampleData.InitializeMusicStoreDatabaseAsync(app.ApplicationServices).Wait();
-            SampleData.InitializeIdentityDatabaseAsync(app.ApplicationServices).Wait();
-
-            //Creates a Store manager user who can manage the store.
-            CreateAdminUser(app.ApplicationServices).Wait();
-        }
-
-        private async Task CreateAdminUser(IServiceProvider serviceProvider)
-        {
-            var configuration = serviceProvider.GetService<IConfiguration>();
-            var userName = configuration.Get("DefaultAdminUsername");
-            var password = configuration.Get("DefaultAdminPassword");
-            //const string adminRole = "Administrator";
-
-            var userManager = serviceProvider.GetService<ApplicationUserManager>();
-            // TODO: Identity SQL does not support roles yet
-            //var roleManager = serviceProvider.GetService<ApplicationRoleManager>();
-            //if (!await roleManager.RoleExistsAsync(adminRole))
-            //{
-            //    await roleManager.CreateAsync(new IdentityRole(adminRole));
-            //}
-
-            var user = await userManager.FindByNameAsync(userName);
-            if (user == null)
-            {
-                user = new ApplicationUser { UserName = userName };
-                await userManager.CreateAsync(user, password);
-                //await userManager.AddToRoleAsync(user, adminRole);
-                await userManager.AddClaimAsync(user, new Claim("ManageStore", "Allowed"));
-            }
         }
     }
 }

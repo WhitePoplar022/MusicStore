@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNet.Identity;
 using Microsoft.Data.Entity;
 using Microsoft.Data.Entity.SqlServer;
+using Microsoft.Framework.ConfigurationModel;
 using Microsoft.Framework.DependencyInjection;
 
 namespace MusicStore.Models
@@ -19,9 +22,8 @@ namespace MusicStore.Models
                 var sqlServerDataStore = db.Configuration.DataStore as SqlServerDataStore;
                 if (sqlServerDataStore != null)
                 {
-                    if (!await db.Database.ExistsAsync())
+                    if (await db.Database.EnsureCreatedAsync())
                     {
-                        await db.Database.CreateAsync();
                         await InsertTestData(serviceProvider);
                     }
                 }
@@ -34,16 +36,43 @@ namespace MusicStore.Models
 
         public static async Task InitializeIdentityDatabaseAsync(IServiceProvider serviceProvider)
         {
-            using (var db = serviceProvider.GetService<DbContext>() as ApplicationDbContext)
+            using (var db = serviceProvider.GetService<ApplicationDbContext>())
             {
                 var sqlServerDataStore = db.Configuration.DataStore as SqlServerDataStore;
                 if (sqlServerDataStore != null)
                 {
-                    if (!await db.Database.ExistsAsync())
+                    if (await db.Database.EnsureCreatedAsync())
                     {
-                        await db.Database.CreateAsync();
+                        await CreateAdminUser(serviceProvider);
                     }
                 }
+                else
+                {
+                    await CreateAdminUser(serviceProvider);
+                }
+            }
+        }
+
+        private static async Task CreateAdminUser(IServiceProvider serviceProvider)
+        {
+            var options = serviceProvider.GetService<IOptionsAccessor<IdentityDbContextOptions>>().Options;
+            //const string adminRole = "Administrator";
+
+            var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
+            // TODO: Identity SQL does not support roles yet
+            //var roleManager = serviceProvider.GetService<ApplicationRoleManager>();
+            //if (!await roleManager.RoleExistsAsync(adminRole))
+            //{
+            //    await roleManager.CreateAsync(new IdentityRole(adminRole));
+            //}
+
+            var user = await userManager.FindByNameAsync(options.DefaultAdminUserName);
+            if (user == null)
+            {
+                user = new ApplicationUser { UserName = options.DefaultAdminUserName };
+                await userManager.CreateAsync(user, options.DefaultAdminPassword);
+                //await userManager.AddToRoleAsync(user, adminRole);
+                await userManager.AddClaimAsync(user, new Claim("ManageStore", "Allowed"));
             }
         }
 

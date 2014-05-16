@@ -31,7 +31,6 @@ namespace MusicStore.Infrastructure
 
         public static IQueryable<T> SortBy<T>(this IQueryable<T> source, string sortExpression) where T : class
         {
-
             if (source == null)
             {
                 throw new ArgumentNullException("source");
@@ -43,18 +42,18 @@ namespace MusicStore.Infrastructure
             }
 
             sortExpression = sortExpression.Trim();
-            bool isDescending = false;
+            var isDescending = false;
 
             // DataSource control passes the sort parameter with a direction
             // if the direction is descending
             if (sortExpression.EndsWith(SORT_DIRECTION_DESC, StringComparison.OrdinalIgnoreCase))
             {
                 isDescending = true;
-                int descIndex = sortExpression.Length - SORT_DIRECTION_DESC.Length;
+                var descIndex = sortExpression.Length - SORT_DIRECTION_DESC.Length;
                 sortExpression = sortExpression.Substring(0, descIndex).Trim();
             }
 
-            if (String.IsNullOrEmpty(sortExpression))
+            if (string.IsNullOrEmpty(sortExpression))
             {
                 return source;
             }
@@ -71,11 +70,12 @@ namespace MusicStore.Infrastructure
 
             LambdaExpression lambda = Expression.Lambda(propertyExpression, parameter);
 
-            string methodName = (isDescending) ? "OrderByDescending" : "OrderBy";
+            var methodName = (isDescending) ? "OrderByDescending" : "OrderBy";
 
             Expression methodCallExpression = Expression.Call(
-                typeof(Queryable), methodName,
-                new Type[] { source.ElementType, propertyExpression.Type },
+                typeof(Queryable),
+                methodName,
+                new [] { source.ElementType, propertyExpression.Type },
                 source.Expression,
                 Expression.Quote(lambda));
 

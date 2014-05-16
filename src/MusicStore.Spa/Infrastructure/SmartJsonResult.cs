@@ -1,6 +1,5 @@
-﻿using System.Text;
+﻿using System;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Mvc;
 using Newtonsoft.Json;
 
 namespace Microsoft.AspNet.Mvc

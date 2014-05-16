@@ -1,23 +1,23 @@
-﻿using System.Collections.Generic;
-using Microsoft.AspNet.Mvc.Rendering;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.AspNet.Routing;
 using Newtonsoft.Json;
 
-namespace System.Web.Mvc.Html
+namespace Microsoft.AspNet.Mvc.Rendering
 {
     public static class JsonExtensions
     {
-        public static HtmlString Json<T, TData>(this HtmlHelper<T> helper, TData data)
+        public static HtmlString Json<T, TData>(this IHtmlHelper<T> helper, TData data)
         {
-            return Json(helper, data, ((IDictionary<string, object>)new RouteValueDictionary()));
+            return Json(helper, data, new RouteValueDictionary());
         }
 
-        public static HtmlString Json<T, TData>(this HtmlHelper<T> helper, TData data, object htmlAttributes)
+        public static HtmlString Json<T, TData>(this IHtmlHelper<T> helper, TData data, object htmlAttributes)
         {
             return Json(helper, data, HtmlHelper.AnonymousObjectToHtmlAttributes(htmlAttributes));
         }
 
-        public static HtmlString Json<T, TData>(this HtmlHelper<T> helper, TData data, IDictionary<string, object> htmlAttributes)
+        public static HtmlString Json<T, TData>(this IHtmlHelper<T> helper, TData data, IDictionary<string, object> htmlAttributes)
         {
             var builder = new TagBuilder("script");
             builder.Attributes["type"] = "application/json";
@@ -31,7 +31,7 @@ namespace System.Web.Mvc.Html
             return helper.Tag(builder);
         }
 
-        public static HtmlString InlineData<T>(this HtmlHelper<T> helper, string actionName, string controllerName)
+        public static HtmlString InlineData<T>(this IHtmlHelper<T> helper, string actionName, string controllerName)
         {
             //var result = helper.Action(actionName, controllerName);
             //var urlHelper = new UrlHelper(helper.ViewContext.RequestContext);

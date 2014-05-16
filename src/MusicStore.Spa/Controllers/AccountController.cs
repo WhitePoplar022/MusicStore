@@ -1,17 +1,17 @@
-﻿using Microsoft.AspNet.Identity;
+﻿using System.Security.Principal;
+using System.Threading.Tasks;
+using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Security;
 using Microsoft.AspNet.Mvc;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using MusicStore.Models;
-using System.Security.Principal;
-using System.Threading.Tasks;
 
 namespace MusicStore.Controllers
 {
     [Authorize]
     public class AccountController : Controller
     {
-        public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager)
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
         {
             UserManager = userManager;
             SignInManager = signInManager;
@@ -19,7 +19,7 @@ namespace MusicStore.Controllers
 
         public UserManager<ApplicationUser> UserManager { get; private set; }
 
-        public ApplicationSignInManager SignInManager { get; private set; }
+        public SignInManager<ApplicationUser> SignInManager { get; private set; }
 
         //
         // GET: /Account/Login
